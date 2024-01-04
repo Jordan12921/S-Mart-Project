@@ -1,11 +1,12 @@
 from flask import Flask,render_template, request, session, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
-
+import os
 # create the extension
 db = SQLAlchemy()
 app = Flask(__name__)
 # configure the SQLite database, relative to the app instance folder
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///C:\\Users\\jorda\\Desktop\\flask-project-main\\flask-project-main\\project.db"
+# app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///F:\\python project\\S-Mart-Project\\project.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.abspath("project.db")}"
 # initialize the app with the extension
 db.init_app(app)
 
@@ -42,7 +43,7 @@ with app.app_context():
 
 @app.route("/")
 def hello_world():
-    return "<p>Hello, Worlds!ssa</p>"
+    return f"<p>Hello, Worlds!ssa {os.path.abspath("s")}</p>"
 
 #Login feature
 @app.route("/login", methods=["GET","POST"])
@@ -66,7 +67,9 @@ def user_create():
         user = User(
             StaffName=request.form["username"],
             Password = request.form["password"],
-            StaffEmail=request.form["email"]
+            StaffEmail=request.form["email"],
+            Role = request.form["role"]
+
         )
         db.session.add(user)
         db.session.commit()

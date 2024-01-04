@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Document</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="{{ url_for ('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for ('static', filename='css/loginstyle.css') }}">
-    
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="">
     <div class="wrapper">
         <div class="login-background">
 
-            <img src="{{ url_for ('static', filename='img/DP0L.jpg')}}" alt="" class="">
+            <img src="./static/img/DP0L.jpg" alt="" class="">
         </div>
         <div class="login_container">
             <h2 class="title">SIGN IN</h2>
@@ -29,14 +27,11 @@
                     <input type="password" name="password" id="password" placeholder="password">
                     <span class="input-append-icon"><i class='bx bxs-lock-alt bx-sm'></i></span>
                 </div>
-                <button type="submit" class="btn btn-login">SIGN IN</button>
+                <button type="button" class="btn btn-login">SIGN IN</button>
+                
+
             </form>
         </div>
-
-        {% if info_message %}
-              <p><strong>Message:</strong> {{ info_message }}</p>
-        {% endif %}
-    </form>
+    </div>
 </body>
-
 </html>

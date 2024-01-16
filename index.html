@@ -14,22 +14,11 @@
             <img src="./static/img/DP0L.jpg" alt="" class="">
         </div>
         <div class="login_container">
-            <h2 class="title">SIGN IN</h2>
-            <hr>
-            <form action="" method="post">
-
-                <div class="input-group">
-                    <input type="email" name="email" id="email" placeholder="email">
-                    <span class="input-append-icon"><i class='bx bxs-envelope bx-sm'></i></span>
-                </div>
-
-                <div class="input-group">
-                    <input type="password" name="password" id="password" placeholder="password">
-                    <span class="input-append-icon"><i class='bx bxs-lock-alt bx-sm'></i></span>
-                </div>
-                <button type="button" class="btn btn-login">SIGN IN</button>
-                
-
+            <h2>Upload File</h2>
+            <form action = "/upload" method = "POST" 
+            enctype = "multipart/form-data">
+                <input type = "file" name = "file" />
+                <input type = "submit"/>
             </form>
         </div>
     </div>

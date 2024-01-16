@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users</title>
+    <style>
+        table,th,td{
+            border: 1px solid;
+        }
+    </style>
+</head>
+<body>
+    <h1>User List</h1>
+
+
+    <table>
+        <thead>
+            <tr>
+                {% for colname in column_names %}
+                
+                <th>{{ colname }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                 
+                <td>
+                    <span>{{ user.StaffName}}</span>
+                    <input type="text" style="display: none;" name="staffname" id="staffname" value="{{user.StaffName}}" required>
+                </td>      
+                <td>
+                    <span>{{ user.StaffEmail}}</span>
+                    <input type="email" style="display: none;" name="staffemail" id="staffemail" value="{{user.StaffEmail}}" required>
+
+                </td>      
+                <td>
+                    <!-- <span>{{ user.Role}}</span> -->
+                    
+                    <input type="radio" name="role" id="admin" value="admin" {% if user.Role == 'admin' %} checked {% endif %} disabled><label for="admin">admin</label>
+                    <input type="radio" name="role" id="staff" value="staff" {% if user.Role == 'staff' %} checked {% endif %} disabled><label for="staff">staff</label>
+                </td>    
+                
+                <td>
+                    <!-- <a id="edit" href="/user/{{user.StaffID}}">edit</a> -->
+                    <a id="edit" href="javascript:;">edit</a>
+                    <a id="update" href="javascript:;" style="display: none;">Update</a>
+                    <a id="cancel" href="javascript:;" style="display: none;">Cancel</a>
+                    <a id="delete" href="/user/{{user.StaffID}}/delete">delete</a>
+                </td>    
+               
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if delete_confirmation %}    
+
+    <div>
+        <form action="" method="post">
+            Click YES to confirm
+            <input type = "submit" value="YES">
+            <a href='/users'>Cancel</a>
+        </form>
+    </div>
+    {% endif %}
+
+    <script type="text/javascript">
+        var btnEdits = document.querySelectorAll('#edit');
+        var btnCancels = document.querySelectorAll('#cancel');
+        btnEdits.forEach((btnEdit)=>{
+            btnEdit.addEventListener('click',editable);
+        })
+        
+        btnCancels.forEach((btnCancel)=>{
+            btnCancel.addEventListener('click',editable)
+        })
+
+        function editable(event) {
+            var row = event.target.closest('tr');
+                var inputElements = row.querySelectorAll('input:not([type=radio])');
+                var spanElements = row.querySelectorAll('span');
+                var radioElements = row.querySelectorAll('input[type="radio"]');
+                inputElements.forEach((inputElement) => {
+                    inputElement.style.display = (inputElement.style.display === 'none') ? 'inline-block' : 'none';
+                });
+
+                spanElements.forEach((spanElement) => {
+                    spanElement.style.display = (spanElement.style.display === 'none') ? 'inline-block' : 'none';
+                });
+
+                radioElements.forEach((radioElement) => {
+                    radioElement.disabled = (radioElement.disabled === true) ? false : true;
+                });
+                 // Toggle the display of the edit, update, and cancel links
+                row.querySelector('#edit').style.display = (row.querySelector('#edit').style.display === 'none') ? 'inline-block' : 'none';
+                row.querySelector('#update').style.display = (row.querySelector('#update').style.display === 'none') ? 'inline-block' : 'none';
+                row.querySelector('#cancel').style.display = (row.querySelector('#cancel').style.display === 'none') ? 'inline-block' : 'none';
+                row.querySelector('#delete').style.display = (row.querySelector('#delete').style.display === 'none') ? 'inline-block' : 'none';
+        }
+    </script>
+</body>
+</html>

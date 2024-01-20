@@ -6,17 +6,135 @@
     <title>Welcome</title>
 </head>
 <body class="">
-
-
+    {% if info_message %}
+    {{info_message}}
+    {% endif %}
+    {% if default %}
         <h2>Upload File</h2>
-        <form action = "/upload" method = "POST" 
+        <form action = "/import" method = "post" 
         enctype = "multipart/form-data">
-            <input type = "file" name = "file" />
-            <input type = "submit"/>
+            <input type = "file" name = "file"  />
+            <input type = "submit" name="import_data"/> <br>
+            <select name="choose-table" id="" required>
+                <option value="">Select Table</option>
+                {% for selection in table_selection %}
+                    <option value="{{selection}}">{{selection}}</option>
+                {% endfor %}
+            </select>
         </form>
+    
+    <hr>
+    {% else %}
+        <a href="{{url_for('insert_data')}}">Reset</a>
+        {% if not row_data.empty %}
+        <h3>Table</h3>
+        <form action="" method="post">
+            <table>
+                <thead>
+                    <tr>
+                        {% for col in column_names %}
+                        <th name="" value="{{col}}">
+                            <span>{{col}}</span>
+                            <input type="text" style="display: none;" name="data_header" id="" value="{{col}}" required>
+                        </th>
+                        {% endfor %}
+                        <th>
+                            <a id="edit" href="javascript:;">edit</a>
+                            <a id="update" href="javascript:;" name="" style="display: none;">Update</a>
+                            <a id="cancel" href="javascript:;" style="display: none;">Cancel</a>
+                        </th>   
+                    </tr>
+                </thead>
 
-        {% if datatable%}
-        <p>{{datatable}}</p>
+                <tbody>
+                   
+                    {% for index, row in row_data.iterrows() %}
+                    <tr 
+                        {% if first_duplicate_rows.bool %}
+                            {% if index in first_duplicate_rows.index %} 
+                                style="background-color: rgb(182, 255, 195)"
+                            {% elif index in repeated_rows.index %}
+                                style="background-color: rgba(255, 182, 193, 1)"
+                            {% endif %} 
+                        {% endif %}    >
+                        {% for col, row_ in zip(column_names, row) %}
+                        <td>
+                            <span name="data-value" value="{{row_}}">{{row_}}</span>
+                            <input type="text" style="display: none;" name="{{col}}" id="" value="{{row_}}" required>
+                        </td>
+                        {% endfor %}
+                        
+                        <td>
+                            <a id="edit" href="javascript:;">edit</a>
+                            <a id="update" href="javascript:;" name="" style="display: none;">Update</a>
+                            <a id="cancel" href="javascript:;" style="display: none;">Cancel</a>
+                            <a id="delete" href="javascript:;">delete</a>
+                        </td>    
+                    </tr>
+                    {% endfor %}
+                    
+                </tbody>
+            </table>
+            <button type="submit" name="save_data">Upload</button>
+        </form>
         {% endif %}
+    {% endif %}
+        <script>
+            var btnEdits = document.querySelectorAll('#edit');
+            var btnCancels = document.querySelectorAll('#cancel');
+            var btnUpdate = document.querySelectorAll('#update');
+            var btnDelete = document.querySelectorAll('#delete');
+
+            btnEdits.forEach((btnEdit)=>{
+                btnEdit.addEventListener('click',editable);
+            });
+            
+            btnCancels.forEach((btnCancel)=>{
+                btnCancel.addEventListener('click',editable)
+            });
+
+            btnUpdate.forEach((btnUpdate)=>{
+                var row = btnUpdate.closest('tr');
+                var inputElements = row.querySelectorAll('input:not([type=radio])');
+
+                btnUpdate.addEventListener('click',()=>{
+                    inputElements.forEach((inputElement) => {
+                        var closestSpan = inputElement.parentElement.querySelector('span');
+                        var nearbySpan = inputElement.previousElementSibling; //get sibling element of the input: span
+                        // Update the span text with the input value
+                        if (nearbySpan && inputElement.value) {nearbySpan.textContent = inputElement.value;}
+                    });  
+                });
+                btnUpdate.addEventListener('click',editable)
+            })
+
+            btnDelete.forEach((btnDelete)=>{
+                var row = btnDelete.closest('tr');
+                btnDelete.addEventListener('click',()=>{
+
+                    row.remove();
+                })
+            })
+
+            
+            function editable(event) {
+                var row = event.target.closest('tr');
+                var inputElements = row.querySelectorAll('input:not([type=radio])');
+                var spanElements = row.querySelectorAll('span');
+
+                inputElements.forEach((inputElement) => {
+                    inputElement.style.display = (inputElement.style.display === 'none') ? 'inline-block' : 'none';
+                });
+                spanElements.forEach((spanElement) => {
+                    spanElement.style.display = (spanElement.style.display === 'none') ? 'inline-block' : 'none';
+                });
+                 // Toggle the display of the edit, update, and cancel links
+                row.querySelector('#edit').style.display = (row.querySelector('#edit').style.display === 'none') ? 'inline-block' : 'none';
+                row.querySelector('#update').style.display = (row.querySelector('#update').style.display === 'none') ? 'inline-block' : 'none';
+                row.querySelector('#cancel').style.display = (row.querySelector('#cancel').style.display === 'none') ? 'inline-block' : 'none';
+                row.querySelector('#delete').style.display = (row.querySelector('#delete').style.display === 'none') ? 'inline-block' : 'none';
+            }
+
+        </script>
 </body>
 </html>

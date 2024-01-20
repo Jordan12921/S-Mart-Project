@@ -3,7 +3,7 @@ from flask import Flask,render_template, request, session, url_for, redirect, fl
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import column,select,insert, inspect, create_engine, MetaData, Table, Column, Integer, String, Date, Float
 import os
-
+import ast
 
 
 from werkzeug.utils import secure_filename
@@ -43,7 +43,8 @@ class UserModel(db.Model):
     
 #class InventoryList DB
 class InventoryList(db.Model):
-    StockID = db.Column(db.String, nullable=False, primary_key=True)
+    id = db.Column(db.Integer, nullable=False, primary_key=True)
+    StockID = db.Column(db.String, nullable=False)
     StockName = db.Column(db.String, nullable=False)
     Category = db.Column(db.String, nullable=False)
     StockInDate = db.Column(db.Date, nullable=False)
@@ -60,16 +61,16 @@ class TBL_Config(db.Model):
     __tablename__ = "Table_Config"
     tbConfig_ID = db.Column(db.Integer, nullable=False, primary_key=True)
     tbConfig_TABLE_NAME = db.Column(db.String, nullable=False)
-    tbConfig_TB_NAME = db.Column(db.String, nullable=False)
     tbConfig_COLNUMBER = db.Column(db.Integer, nullable=True)
-    tbConfig_STATUS = db.Column(db.String, nullable=False)
+    tbConfig_COLUMNS = db.Column(db.String, nullable=False)
+    tbConfig_COLUMN_TYPES = db.Column(db.String, nullable=False)
 
-    def __init__(self,tbConfig_TABLE_NAME,tbConfig_TB_NAME,tbConfig_COLNUMBER,tbConfig_STATUS):
+    def __init__(self,tbConfig_TABLE_NAME,tbConfig_COLNUMBER,tbConfig_COLUMNS,tbConfig_COLUMN_TYPES):
 
         self.tbConfig_TABLE_NAME = tbConfig_TABLE_NAME
-        self.tbConfig_TB_NAME = tbConfig_TB_NAME
         self.tbConfig_COLNUMBER = tbConfig_COLNUMBER
-        self.tbConfig_STATUS = tbConfig_STATUS
+        self.tbConfig_COLUMNS = tbConfig_COLUMNS
+        self.tbConfig_COLUMN_TYPES = tbConfig_COLUMN_TYPES
 
     def __rer__(self):
         return f'<Table_Config Model {self.tbConfig_TABLE_NAME!r}'
@@ -90,7 +91,7 @@ with app.app_context():
 
 @app.route("/")
 def index():
-    return render_template("index.html", info_message = None)
+    return render_template("excel-import-form.html", row_data = pd.DataFrame())
 
 #Login feature
 @app.route("/login", methods=["GET","POST"])
@@ -223,54 +224,149 @@ def crea_dynamic_table(table_name, column_names, datatypes):
     else:
         print(f"Table '{table_name}' already exists.")
 
-
-
 # Schema Builder
 @app.route('/tablebuilder', methods=['GET','POST'])
 def tablebuilder(info = None):
 
     column_names = [column.name for column in TBL_Config.__table__.columns]
     # table = db.session.execute(db.select(TBL_Config)).scalars()
-    table = db.session.query(TBL_Config.tbConfig_ID,TBL_Config.tbConfig_TB_NAME).all()
+    table = db.session.query(TBL_Config.tbConfig_ID,TBL_Config.tbConfig_TABLE_NAME).all()
     print('Table_Config: ', table)
     table_detail = None
+
+    if request.method == "GET":
+        with db.engine.connect() as connection:
+            tble = db.Table('user', db.metadata, autoload=True, autoload_with=db.engine)
+            result = connection.execute(db.select(tble))
+            columns = result.keys()
+            all_records = [dict(zip(columns, row)) for row in result.fetchall()]
+            connection.close()
+        if result:
+            print(all_records)
 
     if request.method == "POST":
         if 'get_form_detail' in request.form:
             id = request.form.get('select-id') or request.args.get('select-id')
             table_detail = TBL_Config.query.filter_by(tbConfig_ID = id).first()
+            cols = ast.literal_eval(table_detail.tbConfig_COLUMNS)
+            print("cols:",cols[0])
+            col_types = ast.literal_eval(table_detail.tbConfig_COLUMN_TYPES)
+            # table_colfield = zip(cols,col_types)
+            # table_colfield = {'col_field': cols,'col__types': col_types}
+            
+            # print("table_colfield",type(table_colfield['col__types']))
+            
+
             # table =db.session.execute(db.select(TBL_Config).filter_by(tbConfig_ID=id)).scalar_one()
             # column_names = table.__table__.columns.keys()
-
+            return render_template("/admin/schema-builder.html",tables = table, table_detail = table_detail,cols = list(cols),col_types =list(col_types),zip=zip)
+        
         if 'form_edit_columns' in request.form:
             column_names = request.form.getlist('field-data')
-            datatypes = request.form.getlist('datatype')
+            column_types = request.form.getlist('datatype')
+            cfg_table = TBL_Config.query.filter_by(tbConfig_TABLE_NAME = request.form["tablename"]).first()
+            cfg_table.tbConfig_COLNUMBER = len(column_names)
+            cfg_table.tbConfig_COLUMNS = str(column_names)
+            cfg_table.tbConfig_COLUMN_TYPES = str(column_types)
+            db.session.commit()
             print('you submitted form 2')
-            print(column_names,datatypes)
+            print(column_names,column_types)
             table_name = request.form['tablename']
             print(request.form)
-            crea_dynamic_table(table_name,column_names,datatypes)
+            # crea_dynamic_table(table_name,column_names,datatypes)
             
     return render_template("/admin/schema-builder.html",tables = table, table_detail = table_detail)
 
-@app.post('/insert_data')
-def insert_data():
-    # Read the File using Flask request
-    file = request.files['file']
-    # save file in local directory
- 
-    # Parse the data as a Pandas DataFrame type
-    data = pd.read_excel(file)
-    table_name = 'Metadata'
-
-
-    data.to_sql(table_name, con=db.engine, index=False, if_exists='append')
+@app.post('/tablebuilder/delete/<int:id>')
+def tablebuilder_delete(id):
+    table = db.get_or_404(TBL_Config, id)
+    if table:
+        print(table)
+        # db.session.delete(table)
+        # db.session.commit()
     
-    # db.session.execute(db.select, data)
-    db.session.commit()
-    print(data)
-    # Return HTML snippet that will render the table
-    return data.to_html()
+    return redirect('/users')
+
+
+
+def getTables():
+    metadata = db.MetaData()
+    metadata.reflect(bind=db.engine)
+    table_list =[]
+    for table_name, table in metadata.tables.items():
+        table_info = {
+            'Table': table_name, 
+            'Columns': [column.name for column in table.columns], 
+            'Types':[str(column.type) for column in table.columns]
+            }
+        table_list.append(table_info)
+        tables = pd.DataFrame(table_list)
+    return tables
+
+
+temp_data = None
+temp_file = None
+@app.route('/import', methods=['GET','POST'])
+def insert_data():
+    global temp_data
+    global temp_file
+    info_message = ""
+    selected_Table = None
+    tables = getTables()
+    inventory_list_index = tables[tables['Table'] == 'inventory_list'].index[0]
+    table_selection = tables['Table']
+
+    # index_table = tables[tables["Table"]=="inventory_list"].index
+    # gex_tablecolumns = list(enumerate(tables.loc[index_table,'Columns']))
+    # print("first:\n",index_table)
+    # print("sedond:\n",gex_tablecolumns[0][1][1:])
+    # table_selection = list(enumerate(tables.loc[inventory_list_index, 'Columns']))
+    if request.method == "GET":
+        print("temporarily data: ",temp_data)
+        # print(tables.dtypes)
+        return render_template('excel-import-form.html',default = True, row_data=pd.DataFrame(),table_selection = table_selection,info_message = info_message)
+    
+    if request.method=="POST":
+        if "import_data" in request.form:
+            selected_Table = request.form["choose-table"]
+            temp_data = selected_Table
+            index_table = tables[tables["Table"] == request.form["choose-table"]].index
+            gex_tablecolumns = list(enumerate(tables.loc[index_table,'Columns']))
+
+            file = request.files['file']
+            data = pd.read_excel(file)
+            temp_file = data
+            duplicate_rows = data[data.duplicated(keep=False)]
+            first_duplicate_rows = duplicate_rows[~duplicate_rows.duplicated(keep='first')]
+            repeated_duplicate_rows = duplicate_rows[duplicate_rows.duplicated()]
+
+            if len(data.columns) == len(gex_tablecolumns[0][1][1:]):
+                info_message += "The columns of excel match the selected table.\n" 
+            else:
+                info_message += "Warnings: Excel and selected table do not match. \n"
+    
+            if len(data.columns) == len(tables["Columns"][2][1:]): print('true')
+            return render_template('excel-import-form.html',default = False, info_message = info_message, 
+                                    column_names = data.columns.values, row_data=data,
+                                    first_duplicate_rows = first_duplicate_rows,
+                                    repeated_rows = repeated_duplicate_rows,
+                                    selected_Table = temp_data, zip = zip)
+
+        if "save_data" in request.form:
+            print("Selected_data", temp_data)
+            headers = request.form.getlist('data_header')
+            data = {header: request.form.getlist(header) for header in headers}
+            
+            df = pd.DataFrame(data)
+            df.to_sql(temp_data, con=db.engine, index=False, if_exists='append')
+            db.session.commit()
+
+            info_message = "Data Inserted Successfully."
+            temp_data = None
+            temp_file = None
+
+        return render_template('excel-import-form.html',default = False, info_message = info_message, row_data=pd.DataFrame())
+
 
 
 
@@ -283,9 +379,9 @@ def table_create():
         tb_config = TBL_Config(
             
             tbConfig_TABLE_NAME = name,
-            tbConfig_TB_NAME = name + "2",
             tbConfig_COLNUMBER = 0,
-            tbConfig_STATUS = "Not Created"
+            tbConfig_COLUMNS = "[]",
+            tbConfig_COLUMN_TYPES = "[]"
 
         )
         db.session.add(tb_config)
@@ -293,23 +389,23 @@ def table_create():
         return redirect(url_for('tablebuilder'))
     return 'You are in table create'
 
-@app.route('/table/create', methods=['POST'])
-def create_dynamic_table(table_name, columns):
-    metadata = MetaData()
-    dynamic_table = Table(table_name, metadata)
+# @app.route('/table/create', methods=['POST'])
+# def create_dynamic_table(table_name, columns):
+#     metadata = MetaData()
+#     dynamic_table = Table(table_name, metadata)
     
-    for column in columns:
-        col_name, col_type = column
-        if col_type == 'String':
-            dynamic_table.append_column(Column(col_name, String))
-        elif col_type == 'Integer':
-            dynamic_table.append_column(Column(col_name, Integer))
-        elif col_type == 'Date':
-            dynamic_table.append_column(Column(col_name, Date))
-        elif col_type == 'Double':
-            dynamic_table.append_column(Column(col_name, Float))
+#     for column in columns:
+#         col_name, col_type = column
+#         if col_type == 'String':
+#             dynamic_table.append_column(Column(col_name, String))
+#         elif col_type == 'Integer':
+#             dynamic_table.append_column(Column(col_name, Integer))
+#         elif col_type == 'Date':
+#             dynamic_table.append_column(Column(col_name, Date))
+#         elif col_type == 'Double':
+#             dynamic_table.append_column(Column(col_name, Float))
 
-    return dynamic_table
+#     return dynamic_table
 
 
 @app.route('/view', methods=['GET','POST'])
@@ -332,6 +428,7 @@ def view_table():
             result = connection.execute(db.select(table))
             columns = result.keys()
             all_records = [dict(zip(columns, row)) for row in result.fetchall()]
+            connection.close()
         # You can now use the 'all_records' variable as needed
         for record in all_records:
             print("record",record)
@@ -393,19 +490,3 @@ def table_update():
 def create_table():
     return render_template('table-create-form.html')
 
-# @app.route("/post", methods=["POST"])
-# def submit():
-#     #use titles to create table
-#     titles = request.form.getlist('field_entity')
-
-#     # ['name','email','role']
-#     for data in titles:
-
-#         # 'name'
-#         value = request.form.getlist(data)
-#         print(data)
-#         #use this to insert value
-#         for v in value:
-#             print(v)
-#     # print(data)
-#     return render_template('index.html', datatable = data)

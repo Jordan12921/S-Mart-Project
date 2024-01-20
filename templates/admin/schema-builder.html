@@ -6,13 +6,7 @@
     <title>S-Mart Project</title>
 </head>
 <body>
-    <h1>Upload Excel</h1>
-    <form action="{{ url_for('insert_data') }}" method="post" enctype="multipart/form-data">
-        <input type="file" name="file"
-            accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
-        <input type="submit" value="Upload">
-    </form>
-    
+
     <h1>Schema Builder</h1>
     <form action="/table/add" method="post">
         {% if info %}
@@ -22,43 +16,70 @@
         <input type="text" name="name" placeholder="Table name" required>
         <button type="submit">Add Table</button>
     </form>
-    <br><br><br>
-
+    <hr>
+    {% if tables %}
     <div class="table-detail">
         <form action="{{ url_for('tablebuilder') }}" method="post" >
-
+            
             <select  name="select-id" class="form-control">
                 
                 {% for tbl in tables %}
-                    <option value="{{ tbl.tbConfig_ID}}" selected>{{ tbl.tbConfig_TB_NAME}}</option>
+                <option value="{{ tbl.tbConfig_ID}}" selected>{{ tbl.tbConfig_TABLE_NAME}}</option>
                 {% endfor %}
-          
+                
             </select>
             <button type="submit" name="get_form_detail">Find</button>
         </form>
         
     </div>
+    {% endif %}
+    
+    <br><br>
 
-    <br><br><br>
-    Table Configuration
     {% if table_detail %}
+    Table Configuration
     <form action="{{ url_for('tablebuilder') }}" method="post">
         <input type="hidden" name="tablename" value="{{table_detail.tbConfig_TABLE_NAME}}">
         <div class="">
-            {% for col, value in table_detail.__dict__.items() if not col.startswith('_') %}
+            {% for col, value in table_detail.__dict__.items() if not col.startswith('_') and col not in ["tbConfig_COLNUMBER","tbConfig_COLUMNS"] %}
             <label for="{{col}}">{{col}}: </label>
             <span name="{{value}}">{{value}}</span>
+            <input type="text" name="data-value" value="{{value}}" required>
+            <a id="edit" href="javascript:;">edit</a>
+            <a id="update" href="javascript:;" name="" style="display: none;">Update</a>
+            <a id="cancel" href="javascript:;" style="display: none;">Cancel</a>
+            <a id="delete" href="javascript:;">delete</a>
             <br>
             {% endfor %}
-            
-            <br>
-            <button type="button" >Edit Columns</button>
+
+            <button type="button" >Save Changes</button>
+            <button type="button" onclick="javascript:;">Edit Columns</button>
         </div>
         
         
         <div class="" style="border: 1px solid #000; margin: 10px 0; padding:10px;">
             <h3>Edit Column Structure</h3>
-            <div class="" id="input-fields" onchange=""></div>
+            <div class="" id="input-fields" onchange="">
+                {% for col, col_type in zip(cols,col_types) %}
+                    
+                    <div class="input-field">
+                        <input type="text" name="field-data" id="" placeholder="Text Field" value="{{col}}" required>
+                        <select name="datatype" onchange="selectOptionChange(this)">
+                           
+                                <option value="string" {% if col_type == 'string' %} selected {% endif %}>String</option>
+                            
+                                <option value="integer" {% if col_type == 'integer' %} selected {% endif %}>Integer</option>
+                            
+                                <option value="double"  {% if col_type == 'double' %} selected {% endif %}>Double</option>
+                            
+                                <option value="date" {% if col_type == 'date' %} selected {% endif %}>Date</option>
+                            
+                        </select>
+                        <button type="button" onclick="btnFieldDelete(this)">X</button>
+                    </div>
+                {% endfor %}
+                
+            </div>
             <br>
             
             <button type="button"  id="add-input-field">Add New Column</button>

@@ -138,18 +138,10 @@ def user_create():
 @app.route('/users')
 @app.route('/users/')
 def RetrieveUserList():
-    # users = db.session.execute(db.select(User)).all()
-    # users = db.session.execute(db.select(User)).scalars().all()
-    # employees = EmployeeModel.query.all()
 
     users = db.session.execute(db.select(UserModel)).scalars()
     column_names = UserModel.metadata.tables['user'].columns.keys()
     column_names = [column for column in UserModel.metadata.tables['user'].columns.keys() if column != 'Password' and column != 'StaffID']
-    # print(type(column_names))
-    # # Use the Inspector to get information about the 'user' table
-    # inspector = inspect(db.engine)
-    # columns = inspector.get_columns('user')  # Replace 'user' with your actual table name
-
 
     return render_template("users/userlist.html", users=users, column_names = column_names)
 
@@ -163,16 +155,6 @@ def user_detail(id):
     if request.method == "POST":
         user = UserModel.query.filter_by(StaffID=id).first()
         if user:
-            # db.session.delete(user)
-            # db.session.commit()
-
-            # name = request.form['name'] if request.form['name'] else user.StaffName
-            # email = request.form['email'] if request.form['email'] else user.StaffEmail
-            # password = request.form['password'] if request.form['password'] else user.Password
-            # role = request.form['position'] if request.form['position'] else user.Role
-            # user = UserModel(StaffID = user.StaffID, StaffName = name, StaffEmail = email,Password = password, Role = role)
-            # db.session.add(user)
-
             user.StaffName = user.StaffName if not request.form['name'] else request.form['name']
             user.StaffEmail = user.StaffEmail if not request.form['email'] else request.form['email']
             user.Password = user.Password if not request.form['password'] else request.form['password']
@@ -217,12 +199,16 @@ def crea_dynamic_table(table_name, column_names, datatypes):
                     table.append_column(db.Column(column_name, db.Float,nullable=False))  # Use Float for double precision
                 else:
                     # Handle unsupported datatypes gracefully
-                    print(f"Unsupported datatype: {datatype}")
+                    print(f"Info: Unsupported datatype. Changing datatype: {datatype} to String")
+                    table.append_column(db.Column(column_name, db.String,nullable=False))
 
             db.metadata.create_all(bind=db.engine)  # Create the table with all columns
             db.session.commit()
+        return True
     else:
         print(f"Table '{table_name}' already exists.")
+    
+    return False
 
 # Schema Builder
 @app.route('/tablebuilder', methods=['GET','POST'])
@@ -235,58 +221,85 @@ def tablebuilder(info = None):
     table_detail = None
 
     if request.method == "GET":
-        with db.engine.connect() as connection:
-            tble = db.Table('user', db.metadata, autoload=True, autoload_with=db.engine)
-            result = connection.execute(db.select(tble))
-            columns = result.keys()
-            all_records = [dict(zip(columns, row)) for row in result.fetchall()]
-            connection.close()
-        if result:
-            print(all_records)
+        # with db.engine.connect() as connection:
+        #     tble = db.Table('user', db.metadata, autoload=True, autoload_with=db.engine)
+        #     result = connection.execute(db.select(tble))
+        #     columns = result.keys()
+        #     all_records = [dict(zip(columns, row)) for row in result.fetchall()]
+        #     connection.close()
+        # if result:
+        #     print("all_records",all_records)
+        print("get mthoder")
 
     if request.method == "POST":
         if 'get_form_detail' in request.form:
             id = request.form.get('select-id') or request.args.get('select-id')
             table_detail = TBL_Config.query.filter_by(tbConfig_ID = id).first()
             cols = ast.literal_eval(table_detail.tbConfig_COLUMNS)
-            print("cols:",cols[0])
             col_types = ast.literal_eval(table_detail.tbConfig_COLUMN_TYPES)
-            # table_colfield = zip(cols,col_types)
-            # table_colfield = {'col_field': cols,'col__types': col_types}
             
-            # print("table_colfield",type(table_colfield['col__types']))
-            
-
-            # table =db.session.execute(db.select(TBL_Config).filter_by(tbConfig_ID=id)).scalar_one()
-            # column_names = table.__table__.columns.keys()
             return render_template("/admin/schema-builder.html",tables = table, table_detail = table_detail,cols = list(cols),col_types =list(col_types),zip=zip)
         
         if 'form_edit_columns' in request.form:
             column_names = request.form.getlist('field-data')
             column_types = request.form.getlist('datatype')
-            cfg_table = TBL_Config.query.filter_by(tbConfig_TABLE_NAME = request.form["tablename"]).first()
-            cfg_table.tbConfig_COLNUMBER = len(column_names)
-            cfg_table.tbConfig_COLUMNS = str(column_names)
-            cfg_table.tbConfig_COLUMN_TYPES = str(column_types)
-            db.session.commit()
-            print('you submitted form 2')
-            print(column_names,column_types)
-            table_name = request.form['tablename']
-            print(request.form)
+            cfg_table = TBL_Config.query.filter_by(tbConfig_TABLE_NAME = request.form["table_name"]).first()
+            print(request.form['data-value'])
+            if cfg_table:
+                cfg_table.tbConfig_TABLE_NAME = request.form['data-value']
+                cfg_table.tbConfig_COLNUMBER = len(column_names)
+                cfg_table.tbConfig_COLUMNS = str(column_names)
+                cfg_table.tbConfig_COLUMN_TYPES = str(column_types)
+                db.session.commit()
+
+            return redirect('/tablebuilder')
             # crea_dynamic_table(table_name,column_names,datatypes)
             
     return render_template("/admin/schema-builder.html",tables = table, table_detail = table_detail)
 
-@app.post('/tablebuilder/delete/<int:id>')
-def tablebuilder_delete(id):
-    table = db.get_or_404(TBL_Config, id)
-    if table:
-        print(table)
-        # db.session.delete(table)
-        # db.session.commit()
-    
-    return redirect('/users')
+@app.route('/tablebuilder/register',methods=["POST"])
+def tablebuilder_register():
+    info_message = ""
+    if request.method == "POST":
+        table_name = request.form["table_name"]
+        cfg_table = TBL_Config.query.filter_by(tbConfig_TABLE_NAME = table_name).first()
+        if cfg_table:
+            column_names =ast.literal_eval(cfg_table.tbConfig_COLUMNS)
+            column_types = ast.literal_eval(cfg_table.tbConfig_COLUMN_TYPES)
 
+        print(column_names)
+        if crea_dynamic_table(table_name,column_names,column_types):
+            info_message += f"Table Created. \n"
+            tbl_config = db.session.execute(db.select(TBL_Config).filter_by(tbConfig_TABLE_NAME=table_name)).scalar_one()
+            if tbl_config:
+                db.session.delete(tbl_config)
+                db.session.commit()
+                info_message += f"{table_name} record deleted from {tbl_config.__tablename__}.\n"
+            
+        else:
+            info_message += 'Create Table failed'
+    return info_message
+
+# @app.route('/tablebuilder/delete/')
+@app.route('/tablebuilder/delete',methods=["POST"])
+def tablebuilder_delete():
+    print("hrekntrklnw")
+    if request.method=="POST":
+        print("hrekntrklnw")
+
+        table_name = request.form['table_name']
+        table = db.session.execute(db.select(TBL_Config).filter_by(tbConfig_TABLE_NAME=table_name)).scalar_one()
+        if table:
+            db.session.delete(table)
+            db.session.commit()
+            print(f"{table_name} deleted")
+            
+        else:
+            print(F"table {table_name} not found")
+    else:
+        print(f"Delete {table_name} failed")
+    return redirect('/tablebuilder')
+        
 
 
 def getTables():

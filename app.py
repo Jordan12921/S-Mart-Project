@@ -274,7 +274,7 @@ def tablebuilder_register():
             if tbl_config:
                 db.session.delete(tbl_config)
                 db.session.commit()
-                info_message += f"{table_name} record deleted from {tbl_config.__tablename__}.\n"
+                info_message += f"{table_name} record deleted from {tbl_config.__tablename__}. <a href='/view'>view</a> \n"
             
         else:
             info_message += 'Create Table failed'
@@ -437,7 +437,7 @@ def view_table():
 
         # Using the SQLAlchemy session to execute a query
         with db.engine.connect() as connection:
-            table = db.Table(selected_table, db.metadata, autoload=True, autoload_with=db.engine)
+            table = db.Table(selected_table, db.metadata, autoload_with=db.engine)
             result = connection.execute(db.select(table))
             columns = result.keys()
             all_records = [dict(zip(columns, row)) for row in result.fetchall()]

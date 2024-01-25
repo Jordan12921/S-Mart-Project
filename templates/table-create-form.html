@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create a table</title>
+</head>
+<body>
+
+    <input type="radio" name="input-type" id="text" value="text" checked><label for="text">text</label>
+    <input type="radio" name="input-type" id="date" value="date" ><label for="date">date</label>
+    <input type="radio" name="input-type" id="password" value="password" ><label for="password">password</label>
+    <input type="radio" name="input-type" id="email" value="email" ><label for="email">email</label>
+    <input type="radio" name="input-type" id="radio" value="radio" ><label for="radio">radio</label>
+    <input type="radio" name="input-type" id="checkbox" value="checkbox" ><label for="checkbox">checkbox</label>
+    <input type="radio" name="input-type" id="number" value="number" ><label for="number">number</label>
+    <br><br><br><br>
+    <!-- <input type="text" placeholder="input type" id="input-type"> -->
+    <input type="text" placeholder="input name" id="input-name">
+    <button id="btn-addinput" onclick="add_input_field()">Add</button>
+    <form action="" id="input-form">
+        
+    </form>
+
+    <script>
+        function add_input_field() {
+            var newInput = document.createElement('input');
+            var newlabel = document.createElement('label');
+            var typeInput = document.querySelector('input[name="input-type"]:checked');
+            var nameinput = document.getElementById('input-name');
+            var form = document.getElementById('input-form')
+            console.log(typeInput.value)
+            // if (typeInput !== null || typeInput !== " ") 
+            //     newInput.type = typeInput.value
+            // else
+            //     newInput.type = 'text'
+
+            // if (typeInput.value.replace(/\s+/g, '').length == 0)
+            //     newInput.name = 'data-value'
+            // else
+            //     newInput.type=nameinput.value
+
+            // if(typeInput.value !== null && typeInput.value.replace(/^\s+|\s+$/gm,'') !== "")
+            //     newInput.type = typeInput.value
+            // else
+            //     newInput.type = 'text'
+
+            newInput.type = typeInput.value
+            newInput.name = nameinput.value
+            newInput.placeholder = nameinput.value
+            newlabel.for = nameinput.value
+            newlabel.value = nameinput.value
+            newInput.required = true;
+            form.appendChild(newInput);
+            form.appendChild(newlabel);
+        }
+    </script>
+</body>
+</html>

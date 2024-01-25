@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S-Mart Project</title>
+</head>
+<body>
+
+    <h1>Schema Builder</h1>
+    <form action="/table/add" method="post">
+        {% if info %}
+        {{info}}
+        {% endif %}
+        <h2>Add New Table</h3>
+        <input type="text" name="name" placeholder="Table name"  required>
+        <button type="submit">Add Table</button>
+    </form>
+    <hr>
+    {% if tables %}
+    <div class="table-detail">
+        <form action="{{ url_for('tablebuilder') }}" method="post" >
+            
+            <select  name="select-id" class="form-control">
+                
+                {% for tbl in tables %}
+                <option value="{{ tbl.tbConfig_ID}}" selected>{{ tbl.tbConfig_TABLE_NAME}}</option>
+                {% endfor %}
+                
+            </select>
+            <button type="submit" name="get_form_detail">Find</button>
+        </form>
+        
+    </div>
+    {% endif %}
+    
+    <br>
+    
+
+
+    {% if table_detail %}
+    <!-- create table  -->
+    <form action="{{url_for('tablebuilder_register')}}" method="post">
+        <input type="text" name="table_name" value="{{table_detail.tbConfig_TABLE_NAME}}"  >
+        <button type="submit" name="register_table" style="font-size: 1.3em; font-weight: 700;">Create Table</button>
+    </form>
+    <br>
+    <form action="{{url_for('tablebuilder_delete')}}" method="post">
+        <input type="hidden" name="table_name" value="{{table_detail.tbConfig_TABLE_NAME}}"  >
+        <button type="submit" id="" >Delete</button>
+    </form>
+
+
+    Table Configuration
+    <form action="{{ url_for('tablebuilder') }}" method="post">
+        <input type="hidden" name="table_name" value="{{table_detail.tbConfig_TABLE_NAME}}">
+        <div class="">
+
+            <label for="Table Name">Table Name: </label>
+            <span name="">{{table_detail.tbConfig_TABLE_NAME}}</span>
+            <input type="text" id="field-input" style="display:none;" name="data-value" value="{{table_detail.tbConfig_TABLE_NAME}}" required>
+            <br>
+            
+
+            <button type="submit" name="form_edit_columns">Save Changes</button>
+            <button type="button" id="btnEditColumn" onclick="javascript:;">Edit Columns</button>
+        </div>
+        
+        
+        <div class="" id="fields_Container" style="border: 1px solid #000; margin: 10px 0; padding:10px; display: none;">
+            <h3>Edit Column Structure</h3>
+            <div class="" id="input-fields" onchange="">
+                {% for col, col_type in zip(cols,col_types) %}
+                    
+                    <div class="input-field">
+                        <input type="text" name="field-data" id="" placeholder="Text Field" value="{{col}}" required>
+                        <select name="datatype" onchange="selectOptionChange(this)">
+                           
+                                <option value="string" {% if col_type == 'string' %} selected {% endif %}>String</option>
+                            
+                                <option value="integer" {% if col_type == 'integer' %} selected {% endif %}>Integer</option>
+                            
+                                <option value="double"  {% if col_type == 'double' %} selected {% endif %}>Double</option>
+                            
+                                <option value="date" {% if col_type == 'date' %} selected {% endif %}>Date</option>
+                            
+                        </select>
+                        <button type="button" onclick="btnFieldDelete(this)">X</button>
+                    </div>
+                {% endfor %}
+                
+            </div>
+            <br>
+            
+            <button type="button"  id="add-input-field">Add New Column</button>
+            <button type="submit" id="btnSave" name="form_edit_columns">Save Change</button>
+        </div>
+    </form>
+
+    {% endif %}
+
+
+
+
+
+    <script type="text/javascript">
+        var btnNewColumn = document.getElementById('add-input-field')
+        var btnEditColumn = document.getElementById('btnEditColumn')
+        btnNewColumn.addEventListener('click',()=>{
+            var divParent = document.getElementById('input-fields');
+            var div = document.createElement('div');
+            div.classList.add('input-field');
+
+            var input = document.createElement('input');
+            input.setAttribute('type','text')
+            input.setAttribute('name','field-data')
+            input.setAttribute('placeholder','Text Field');
+            input.setAttribute('data-type','string');
+            input.required = true;
+
+            var selectElement = document.createElement('select');
+            selectElement.setAttribute('name','datatype');
+            selectElement.setAttribute('onchange','selectOptionChange(this)');
+            selectElement.add(new Option('String','string',selected = true))
+            selectElement.add(new Option('Integer','integer'))
+            selectElement.add(new Option('Double','double'))
+            selectElement.add(new Option('Date','date'))
+
+            var btnElement =document.createElement('button');
+            btnElement.setAttribute('type','button');
+            btnElement.setAttribute('onclick','btnFieldDelete(this)')
+            btnElement.innerText = 'X'
+
+
+            div.appendChild(input)
+            div.appendChild(selectElement)
+            div.appendChild(btnElement)
+            
+
+            divParent.appendChild(div)
+            divParent.appendChild(document.createElement('br'))
+            
+        })
+
+        btnEditColumn.addEventListener('click',()=>{
+            var fields_container = document.getElementById('fields_Container');
+            var tbl_nameElement = document.getElementById('field-input');
+            var tbl_nameSpan = tbl_nameElement.previousElementSibling
+            
+            tbl_nameSpan.style.display = (tbl_nameSpan.style.display === "none")? 'inline-block': 'none';
+            tbl_nameElement.style.display = (tbl_nameElement.style.display === "none")? 'inline-block': 'none';
+            fields_container.style.display = (fields_container.style.display === "none")? 'block': 'none';
+        })
+
+        function btnFieldDelete(e){
+            var inputField = e.parentNode.remove();
+        }
+
+
+        function selectOptionChange(e) {
+            var input = e.parentNode.firstChild;
+            console.log(input)
+            input.setAttribute('data-type',e.value);
+        }
+
+    
+
+
+    </script>
+
+
+
+
+
+
+
+</body>
+</html>

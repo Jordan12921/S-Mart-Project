@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Table</title>
+</head>
+<body>
+    <h3>Table in Database</h3>
+    <p>Note that here is to view the tables created in the database. <a href="{{url_for('tablebuilder')}}">tablebuilder</a> is the method to create a table</p>
+    <form action="" method="post">
+
+        <select name="choose-table" id="">
+            {% for table in metadata.tables.values() %}
+            <option value="{{table}}">{{table}}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Load</button>
+    </form>
+
+    <hr>
+    {% if records %}
+    <table border="1">
+        <thead>
+            <tr>
+                {% for columns in records[0].keys() %}
+                <th>{{columns}}</th>
+                {% endfor %}
+                <!-- Add more headers for other columns as needed -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+            <tr>
+                {% for value in record.values() %}
+                <td><span name="old-value">{{ value }}</span>
+                    <input type="text" style="display: none;" name="new-value" id="" value="{{value}}" required>
+                </td>
+                {% endfor %}
+                <td>
+                    
+                    <a id="edit" href="javascript:;">edit</a>
+                    <form action="/table/update" method="post">
+                        <button id="update" type="submit" name="" style="display: none;">Update</button>
+                    </form>
+                    <a id="cancel" href="javascript:;" style="display: none;">Cancel</a>
+                    <a id="delete" href="#">delete</a>
+                </td>    
+            </tr>
+            {% endfor %}
+            
+        </tbody>
+    </table>  
+    {% else %}
+        <p>No records available.</p>
+    {% endif %}
+
+
+
+
+
+    <script type="text/javascript">
+        var btnEdits = document.querySelectorAll('#edit');
+        var btnCancels = document.querySelectorAll('#cancel');
+        btnEdits.forEach((btnEdit)=>{
+            btnEdit.addEventListener('click',editable);
+        })
+        
+        btnCancels.forEach((btnCancel)=>{
+            btnCancel.addEventListener('click',editable)
+        })
+
+        function editable(event) {
+            var row = event.target.closest('tr');
+                var inputElements = row.querySelectorAll('input:not([type=radio])');
+                var spanElements = row.querySelectorAll('span');
+                var radioElements = row.querySelectorAll('input[type="radio"]');
+                inputElements.forEach((inputElement) => {
+                    inputElement.style.display = (inputElement.style.display === 'none') ? 'inline-block' : 'none';
+                });
+
+                spanElements.forEach((spanElement) => {
+                    spanElement.style.display = (spanElement.style.display === 'none') ? 'inline-block' : 'none';
+                });
+
+                radioElements.forEach((radioElement) => {
+                    radioElement.disabled = (radioElement.disabled === true) ? false : true;
+                });
+                 // Toggle the display of the edit, update, and cancel links
+                row.querySelector('#edit').style.display = (row.querySelector('#edit').style.display === 'none') ? 'inline-block' : 'none';
+                row.querySelector('#update').style.display = (row.querySelector('#update').style.display === 'none') ? 'inline-block' : 'none';
+                row.querySelector('#cancel').style.display = (row.querySelector('#cancel').style.display === 'none') ? 'inline-block' : 'none';
+                row.querySelector('#delete').style.display = (row.querySelector('#delete').style.display === 'none') ? 'inline-block' : 'none';
+        }
+    </script>
+</body>
+</html>

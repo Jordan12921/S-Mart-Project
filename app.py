@@ -1,6 +1,8 @@
 from flask import Flask,render_template, request, session, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 import os
+from functools import wraps
+
 # create the extension
 db = SQLAlchemy()
 app = Flask(__name__)
@@ -59,6 +61,18 @@ def user_list():
             url_direction = "index.html"
     return render_template(f"{url_direction}", info_message = info_message)
 
+# login required decorator
+def login_required(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            flash('You need to login first.')
+            return redirect(url_for('login'))
+    return wrap
+
+### This is for ADMIN
 #Create Account
 @app.route("/register", methods=["GET", "POST"])
 def user_create():
@@ -78,18 +92,50 @@ def user_create():
 
     return render_template("users/register.html",error = error )
 
-@app.route("/user/<int:id>")
-def user_detail(id):
-    user = db.get_or_404(User, id)
-    return render_template("user/detail.html", user=user)
+#Staff Management 
+@app.route("/staff_management/", methods=["GET","POST"])
+@app.route("/staff_management/<int:page_num>", methods=["GET","POST"])
+@login_required
+def staff_management(page_num):
+    staffList = User.query.filter(User.role=="Staff".paginate(per_page=10, page=page_num, error_out=True))
+    user = User.query.get(session["logged_in"])
+    role = user.role
+    
+    #To prevent staff from enter the admin page
+    if role == "Staff":
+        return staff_Home()
+    
+    if request.method == "POST" and "tag" in request.form:
+        tag = request.form["tag"]
+        search = "%{}%".format(tag)
+        staffList = User.query.filter(User.name.like(search)).paginate(per_page=10, error_out=True)
+        return render_template('manageStaff.html',staff=staffList, tag=tag, user=user)
+    return render_template('manageStaff.html', staff = staffList,user=user)
 
-@app.route("/user/<int:id>/delete", methods=["GET", "POST"])
-def user_delete(id):
-    user = db.get_or_404(User, id)
+#Register staff with CSV file
 
-    if request.method == "POST":
-        db.session.delete(user)
-        db.session.commit()
-        return redirect(url_for("user_list"))
 
-    return render_template("user/delete.html", user=user)
+
+### This is for STAFF
+@app.route('/staffHomepage')
+@login_required
+def staff_Home():
+    user = User.query.filter_by(id=session['logged_in']).first()
+    return render_template('/staff_mode/staffHomepage.html', user=user)
+
+###IGNORE FIRST
+# @app.route("/user/<int:id>")
+# def user_detail(id):
+#     user = db.get_or_404(User, id)
+#     return render_template("user/detail.html", user=user)
+
+# @app.route("/user/<int:id>/delete", methods=["GET", "POST"])
+# def user_delete(id):
+#     user = db.get_or_404(User, id)
+
+#     if request.method == "POST":
+#         db.session.delete(user)
+#         db.session.commit()
+#         return redirect(url_for("user_list"))
+
+#     return render_template("user/delete.html", user=user)

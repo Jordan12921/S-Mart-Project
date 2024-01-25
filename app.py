@@ -5,8 +5,13 @@ from sqlalchemy import column,select,insert, inspect, create_engine, MetaData, T
 import os
 import ast
 
+# from models.user import User
 
 from werkzeug.utils import secure_filename
+
+# from flask_wtf import FlaskForm
+# from wtforms import StringField, TextField, SubmitField
+# from wtforms.validators import DataRequired, Length
 
 # create the extension
 db = SQLAlchemy()
@@ -21,7 +26,7 @@ db.init_app(app)
 
 ####DATABASE
 #User table DB
-class UserModel(db.Model):
+class User(db.Model):
     __tablename__ = "user"
     StaffID = db.Column(db.Integer, primary_key=True)
     StaffName = db.Column(db.String, unique=True, nullable=False)
@@ -39,7 +44,7 @@ class UserModel(db.Model):
         self.Role = Role
     
     def __rer__(self):
-        return f'<UserModel {self.StaffName!r}'
+        return f'<User {self.StaffName!r}'
     
 #class InventoryList DB
 class InventoryList(db.Model):
@@ -79,19 +84,19 @@ class TBL_Config(db.Model):
 with app.app_context():
     #Create database
     db.create_all()
-    if not db.session.query(UserModel).filter(UserModel.StaffName == 'user_test').count():
+    if not db.session.query(User).filter(User.StaffName == 'user_test').count():
         # delete old record
-        db.session.query(UserModel).filter(UserModel.StaffName == 'user_test').delete()
+        db.session.query(User).filter(User.StaffName == 'user_test').delete()
         db.session.commit()
         print("Inserted User")
         # Insert the new record
-        db.session.add(UserModel())
+        db.session.add(User())
         db.session.commit()
 
 
 @app.route("/")
 def index():
-    return render_template("excel-import-form.html", row_data = pd.DataFrame())
+    return render_template("index.html", row_data = pd.DataFrame())
 
 #Login feature
 @app.route("/login", methods=["GET","POST"])
@@ -103,7 +108,7 @@ def user_list():
     
     if request.method == "POST":
         # users = db.session.execute(db.select(User).order_by(User.StaffName)).scalars()
-        user = db.session.execute(db.select(UserModel).filter_by(StaffEmail=request.form["email"],Password=request.form["password"])).scalar()
+        user = db.session.execute(db.select(User).filter_by(StaffEmail=request.form["email"],Password=request.form["password"])).scalar()
         if not user:
             info_message = "Invalid Email or Password!"
             return render_template(f"{url_direction}", info_message = info_message)
@@ -121,7 +126,7 @@ def user_create():
         return render_template("users/register.html")
 
     if request.method == "POST":
-        user = UserModel(
+        user = User(
             StaffName=request.form["username"],
             Password = request.form["password"],
             StaffEmail=request.form["email"],
@@ -134,51 +139,63 @@ def user_create():
         return render_template("users/register.html",error = "register successfully" )
     
 
+    
+@app.route('/staff_management/',methods=["GET","POST"])
+@app.route('/staff_management/<int:page_num>', methods=["GET","POST"])
+def staff_management(page_num =1):
 
-@app.route('/users')
-@app.route('/users/')
-def RetrieveUserList():
+    staffList = User.query.filter(User.Role=="staff").paginate(per_page=10, page=page_num, error_out=True)
+    column_names = User.metadata.tables['user'].columns.keys()
+    column_names = [column for column in User.metadata.tables['user'].columns.keys() if column != 'Password' and column != 'StaffID']
 
-    users = db.session.execute(db.select(UserModel)).scalars()
-    column_names = UserModel.metadata.tables['user'].columns.keys()
-    column_names = [column for column in UserModel.metadata.tables['user'].columns.keys() if column != 'Password' and column != 'StaffID']
+    return render_template("users/management.html", users=staffList, column_names = column_names)
 
-    return render_template("users/userlist.html", users=users, column_names = column_names)
+# This is for staff 
+@app.route("/staff/<int:id>",methods=["GET", "POST"])
+def detail_staff(id):
+    user = db.get_or_404(User, id)
 
-
-@app.route("/user/<int:id>",methods=["GET", "POST"])
-def user_detail(id):
-    if request.method == "GET":
-        user = db.get_or_404(UserModel, id)
-        return render_template("users/user-detail.html", user=user)
+        
     
     if request.method == "POST":
-        user = UserModel.query.filter_by(StaffID=id).first()
-        if user:
-            user.StaffName = user.StaffName if not request.form['name'] else request.form['name']
-            user.StaffEmail = user.StaffEmail if not request.form['email'] else request.form['email']
-            user.Password = user.Password if not request.form['password'] else request.form['password']
-            user.Role = user.Role if not request.form['position'] else request.form['position']
-
-            db.session.commit()
-            return redirect(f'/user/{id}')
-        return f"User with id = {id} Does not exist"
-
-
-
-
-@app.route("/user/<int:id>/delete",methods=['Get','POST'])
-def user_delete(id):
-    if request.method =='GET':
-        return render_template("users/userlist.html",  delete_confirmation = True)
-    if request.method =='POST':
-        user = db.get_or_404(UserModel, id)
-        if user:
-            db.session.delete(user)
-            db.session.commit()
+        # user = User.query.filter_by(StaffID=id).first()
         
-        return redirect('/users')
+        user.StaffName = user.StaffName if not request.form['staff_name'] else request.form['staff_name']
+        user.StaffEmail = user.StaffEmail if not request.form['staff_email'] else request.form['staff_email']
+        user.Password = user.Password if not request.form['password'] else request.form['password']
+        user.Role = user.Role if not request.form['position'] else request.form['position']
 
+        db.session.commit()
+    return render_template("users/detail.html", user=user)
+
+@app.route("/staff/<int:id>/delete",methods=['POST'])
+def delete_staff(id):
+    if request.method =='POST':
+        user = User.query.get_or_404(id)
+        
+        db.session.delete(user)
+        db.session.commit()
+        
+    return redirect(url_for('staff_management'))
+
+@app.route("/staff/<int:id>/update",methods=['GET','POST'])
+def update_staff(id):
+    if request.method =='POST':
+        user = User.query.get_or_404(id)
+
+        user.StaffName =  request.form['staff_name']
+        print("printL ",request.form['staff_name'])
+        user.StaffEmail = request.form['staff_email']
+        # user.Password = user.Password if not request.form['password'] else request.form['password']
+        user.Role = request.form['role']
+
+        db.session.commit()
+        
+    return redirect(url_for('staff_management'))
+
+
+
+# System Function
 def crea_dynamic_table(table_name, column_names, datatypes):
     # Ensure table object is created within the context
     inspector = inspect(db.engine)  # Use inspector for table existence check

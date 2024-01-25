@@ -26,14 +26,14 @@
         <tbody>
             {% for user in users %}
             <tr>
-                 
+                <form method="POST" action="{{ url_for('update_staff', id=user.StaffID) }}" style="display: inline-block;">
                 <td>
                     <span>{{ user.StaffName}}</span>
-                    <input type="text" style="display: none;" name="staffname" id="staffname" value="{{user.StaffName}}" required>
+                    <input type="text" style="display: none;" name="staff_name" id="staff_name" value="{{user.StaffName}}" required>
                 </td>      
                 <td>
                     <span>{{ user.StaffEmail}}</span>
-                    <input type="email" style="display: none;" name="staffemail" id="staffemail" value="{{user.StaffEmail}}" required>
+                    <input type="email" style="display: none;" name="staff_email" id="staff_name" value="{{user.StaffEmail}}" required>
 
                 </td>      
                 <td>
@@ -44,27 +44,22 @@
                 </td>    
                 
                 <td>
-                    <!-- <a id="edit" href="/user/{{user.StaffID}}">edit</a> -->
-                    <a id="edit" href="javascript:;">edit</a>
-                    <a id="update" href="javascript:;" style="display: none;">Update</a>
-                    <a id="cancel" href="javascript:;" style="display: none;">Cancel</a>
-                    <a id="delete" href="/user/{{user.StaffID}}/delete">delete</a>
+                    <button type="button" id="edit" href="javascript:;">edit</button>
+                    <button type="button" id="cancel" href="javascript:;" style="display: none;">Cancel</button>
+                    
+                        <button type="submit" id="update" style="display: none;">Update</button>
+                </form>
+                
+                    <form method="POST" action="{{ url_for('delete_staff', id=user.StaffID) }}" style="display: inline-block;">
+                        <button id="delete" type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this item?')">Delete</button>
+                    </form>
                 </td>    
                
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    {% if delete_confirmation %}    
 
-    <div>
-        <form action="" method="post">
-            Click YES to confirm
-            <input type = "submit" value="YES">
-            <a href='/users'>Cancel</a>
-        </form>
-    </div>
-    {% endif %}
 
     <script type="text/javascript">
         var btnEdits = document.querySelectorAll('#edit');

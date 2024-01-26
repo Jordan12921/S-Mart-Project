@@ -43,9 +43,6 @@ with app.app_context():
     #Create database
     db.create_all()
 
-@app.route("/")
-def hello_world():
-    return f"<p>Hello, Worlds!ssa {os.path.abspath("s")}</p>"
 
 #Login feature
 @app.route("/login", methods=["GET","POST"])

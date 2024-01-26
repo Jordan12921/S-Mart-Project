@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>simple page</title>
+</head>
+<body>
+
+<!-- { for table in tables }
+            {{ table|safe }}
+{ endfor % -->
+    <h2>Preview table</h2>
+    <table>
+        <tr>
+            {% for col in column_names %}
+                <th>{{col}}</th>
+            {% endfor %}
+        </tr>
+        {% for row in row_data %}
+            <tr>
+                {% for col, row_ in zip(column_names, row) %}
+                    {% if col == link_column %}
+                        <td>
+                            <button type="submit" value={{ row_ }} name="person_id" form="patient_form" class="patient_button">
+                                {{ row_ }}
+                            </button>
+                        </td>
+                    {% else %}
+
+                        <td>{{row_}}</td>
+
+                    {% endif %}
+                {% endfor %}
+            </tr>
+        {% endfor %}
+
+    </table>
+    <br><br><br><br>
+    <h2>Editable table</h2>
+    <form action="/post" method="POST" name="datatable">
+        <table>
+            <thead>
+            <tr>
+                {% for colname in column_names %}
+                <th><input type="text" style="font-size: 1.1rem;" name="field_entity" value="{{ colname }}"></th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in row_data %}
+            <tr>
+            
+                    {% for col, row_ in zip(column_names, row) %}
+                        
+                            <td><input type="text" name="{{col}}" value="{{ row_ }}"></td>      
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <br><br>
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>

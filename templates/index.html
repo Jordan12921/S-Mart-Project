@@ -3,12 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome</title>
+    <title>index</title>
 </head>
 <body>
-    <h1>Welcome to the Smart project</h1>
-    <h2> Hello World<h2>
-    <h3> Jordan is a DumbAss <h3>
-    <h4> Bye bye <h4>
+    <a href="{{url_for('tablebuilder')}}">schema-builder</a><br>
+    <a href="{{url_for('user_list')}}">User List</a><br>
+    
+    <a href="{{url_for('user_create')}}">Register</a><br>
+    <a href="localhost:5000/login">Login</a><br>
+
+
+    <table>
+        {{ df | safe }}
+    </table>
 </body>
 </html>

@@ -1,0 +1,16 @@
+<h3>Id</h3>
+<p>{{user.StaffID}}</p><hr>
+<h3>Name</h3>
+<p>{{user.StaffName}}</p><hr>
+<h3>Age</h3>
+<p>{{user.StaffEmail}}</p><hr>
+<h3>Position</h3>
+<p>{{user.Role}}</p><hr>
+
+<form action="" method="post">
+    <input type="text" name="name" placeholder="{{user.StaffName}}"><br>
+    <input type="email" name="email" placeholder="{{user.StaffEmail}}"><br>
+    <input type="password" name="password" placeholder="{{user.Password}}"><br>
+    <input type="text" name="position" placeholder="{{user.Role}}"><br>
+    <button type="submit">Update</button>
+</form>

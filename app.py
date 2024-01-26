@@ -49,7 +49,7 @@ def hello_world():
 
 #Login feature
 @app.route("/login", methods=["GET","POST"])
-def user_list():
+def login():
     info_message = None
     url_direction = "users/login.html"
     if request.method == "POST":
